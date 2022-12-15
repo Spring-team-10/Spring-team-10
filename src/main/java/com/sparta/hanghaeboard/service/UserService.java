@@ -5,10 +5,10 @@ import com.sparta.hanghaeboard.dto.SignupRequestDto;
 import com.sparta.hanghaeboard.dto.MsgResponseDto;
 import com.sparta.hanghaeboard.entity.User;
 import com.sparta.hanghaeboard.entity.UserRoleEnum;
+import com.sparta.hanghaeboard.exception.CustomException;
+import com.sparta.hanghaeboard.exception.ErrorCode;
 import com.sparta.hanghaeboard.jwt.JwtUtil;
 import com.sparta.hanghaeboard.repository.UserRepository;
-import com.sparta.hanghaeboard.util.ErrorCode;
-import com.sparta.hanghaeboard.util.RequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,14 +38,14 @@ public class UserService {
         // 회원 중복 확인
         Optional<User> found = userRepository.findByUsername(username);
         if (found.isPresent()) {
-            throw new RequestException(ErrorCode.중복된_아이디_입니다_400);
+            throw new CustomException(ErrorCode.ALREADY_EXIST_USERNAME);
         }
 
         // 사용자 ROLE 확인
         UserRoleEnum role = UserRoleEnum.USER;
         if (signupRequestDto.isAdmin()) {
             if (!signupRequestDto.getAdminToken().equals(ADMIN_TOKEN)) {
-                throw new RequestException(ErrorCode.관리자_비밀번호가_일치하지_않습니다_400);
+                throw new CustomException(ErrorCode.DISMATCH_ADMIN_TOKEN);
             }
             role = UserRoleEnum.ADMIN;
         }
@@ -61,11 +61,11 @@ public class UserService {
 
         // 사용자 확인
         User user = userRepository.findByUsername(username).orElseThrow(
-                () -> new RequestException(ErrorCode.회원을_찾을_수_없습니다_400)
+                () -> new CustomException(ErrorCode.NO_EXIST_USER)
         );
         // 비밀번호 확인
         if(!passwordEncoder.matches(password,user.getPassword())){
-            throw  new RequestException(ErrorCode.비밀번호가_일치하지_않습니다_400);
+            throw  new CustomException(ErrorCode.DISMATCH_PASSWORD);
         }
 
         response.addHeader(JwtUtil.AUTHORIZATION_HEADER, jwtUtil.createToken(user.getUsername(), user.getRole()));
@@ -77,11 +77,11 @@ public class UserService {
         //유저의 권한이 admin과 같으면 모든 데이터 삭제 가능
         if (user.getRole().equals(UserRoleEnum.ADMIN)) {
             user = userRepository.findById(id).orElseThrow(
-                    () -> new RequestException(ErrorCode. 관리자_비밀번호가_일치하지_않습니다_400));
+                    () -> new CustomException(ErrorCode.DISMATCH_ADMIN_TOKEN));
         } else {
             //유저의 권한이 admin이 아니면 아이디가 같은 유저만 삭제 가능
             user = userRepository.findByIdAndUsername(id, user.getUsername()).orElseThrow(
-                    () -> new RequestException(ErrorCode.회원을_찾을_수_없습니다_400)
+                    () -> new CustomException(ErrorCode.NO_EXIST_USER)
             );
         }
         userRepository.delete(user);
