@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
 }
 
+// 깃테스트
 group = 'com.sparta'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
